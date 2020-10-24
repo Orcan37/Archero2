@@ -2105,7 +2105,7 @@ PrefabInstance:
     - target: {fileID: 8405692195613977179, guid: 12a224379c1604bfa9affc00d6033d90,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -103.719604
+      value: -103.71973
       objectReference: {fileID: 0}
     - target: {fileID: 8405692195613977179, guid: 12a224379c1604bfa9affc00d6033d90,
         type: 3}
@@ -2274,6 +2274,7 @@ MonoBehaviour:
   currentHealth: 10
   respawnGO: 7
   owner: 0
+  whoControls: 0
   materialsOwner:
   - {fileID: 2100000, guid: 59e4faf24927edf4a82f463ad16f1c37, type: 2}
   - {fileID: 2100000, guid: b3ee82e1627fa4d7dae5b3ff78580a2b, type: 2}
@@ -2811,6 +2812,11 @@ PrefabInstance:
         type: 3}
       propertyPath: currentHealth
       value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 4415378020262721144, guid: 997e4419c90bb4035a7c3b4a495fde60,
+        type: 3}
+      propertyPath: whoControls
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4415378020262721149, guid: 997e4419c90bb4035a7c3b4a495fde60,
         type: 3}

@@ -7,7 +7,7 @@ public class mover : MonoBehaviour
     public float powerAtak = 1;  // сила атаки при ударе об другой объект
     public float speed;
     public float destroyTime = 3;
-    public Owner owner = Owner.Monster;
+    public Owner owner = Owner.Player1;
 
     public void Start()
     {

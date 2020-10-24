@@ -4,9 +4,7 @@ using UniRx;
 using UnityEngine;
 
 public partial class Entity : MonoBehaviour
-{
-
-
+{ 
     public int damage = 1;
     public float speedAtak = 3;
     public float delayAtak = 3;
@@ -19,7 +17,7 @@ public partial class Entity : MonoBehaviour
     public float respawnGO = 7;
     [Header("Status")]
     public Owner owner = Owner.Player1;
-
+    public WhoControls whoControls = WhoControls.AI;
 
     public Material[] materialsOwner;
 
@@ -40,39 +38,42 @@ public partial class Entity : MonoBehaviour
         }
         else
         {
-            if (this.owner == Owner.Monster || atakTrue)
+            if (whoControls == WhoControls.AI || atakTrue)
             {
-                StartCoroutine(GetCurrentTarget());
-                delayAtak = speedAtak;
+              //  StartCoroutine(GetCurrentMoveTarget());
+             
                 AtackEnemy();    // стрельнуть
 
             }
         }
 
-        if (variableJoystick == null) { return; }
-        Vector3 direction = Vector3.forward * variableJoystick.Vertical + Vector3.right * variableJoystick.Horizontal;
-        rb.AddForce(direction * speed * 10 * Time.fixedDeltaTime, ForceMode.VelocityChange);
-        if (variableJoystick.Vertical != 0 || variableJoystick.Horizontal != 0)
+        if (whoControls == WhoControls.Player)
         {
-            atakTrue = false;
-        }
-        else
-        {
-            atakTrue = true;
-        }
+            Vector3 direction = Vector3.forward * variableJoystick.Vertical + Vector3.right * variableJoystick.Horizontal;
+            rb.AddForce(direction * speed * 10 * Time.fixedDeltaTime, ForceMode.VelocityChange);
+            if (variableJoystick.Vertical != 0 || variableJoystick.Horizontal != 0)
+            {
+                atakTrue = false;
+            }
+            else
+            {
+                atakTrue = true;
+            }
+        }  // тоько если человек пользуется 
+        
 
     }
     void Start()
     {
-        shotSpawn = this.transform.Find("shotSpawn").gameObject;
-        rb = this.GetComponent<Rigidbody>();
-        if (this.owner == Owner.Player1)
+        shotSpawn =  transform.Find("shotSpawn").gameObject;
+        rb = GetComponent<Rigidbody>();
+        if (owner == Owner.Player1)
         {
-            this.GetComponent<MeshRenderer>().material = materialsOwner[0];
+            GetComponent<MeshRenderer>().material = materialsOwner[0];
         }
-        else if (this.owner == Owner.Monster)
+        else if (owner == Owner.Player2)
         {
-            this.GetComponent<MeshRenderer>().material = materialsOwner[1];
+            GetComponent<MeshRenderer>().material = materialsOwner[1];
         }
 
         currentHealth = maxHealth;
@@ -83,7 +84,7 @@ public partial class Entity : MonoBehaviour
 
     public void AtackEnemy()
     {
-
+        delayAtak = speedAtak;
         GameObject clone = Instantiate(shot, shotSpawn.transform.position, shotSpawn.transform.rotation) as GameObject;
         clone.GetComponent<mover>().powerAtak = damage;
         clone.GetComponent<mover>().owner = owner;
@@ -111,6 +112,7 @@ public partial class Entity : MonoBehaviour
 
     public void Respawn()
     {
+
         currentHealth = maxHealth;
         GameObject RespawnGO = GameObject.FindWithTag("Respawn");
         x = Random.Range(xAreaGames.x, xAreaGames.y);
@@ -118,7 +120,8 @@ public partial class Entity : MonoBehaviour
         this.gameObject.transform.position = new Vector3(x, AreaGames.transform.position.y, z);
         this.gameObject.transform.SetParent(RespawnGO.transform);
         AIStart();
-        if (owner == Owner.Monster) { RandomMoveForEnemy(); }
+
+        if (whoControls == WhoControls.AI) { RandomMoveForEnemy(); }
     }
 
 }

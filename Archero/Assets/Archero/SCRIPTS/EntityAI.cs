@@ -7,7 +7,7 @@ public partial class Entity : MonoBehaviour
 {
     [Header("AI")]
     public GameObject currentTarget;
-    public NavMeshAgent agent; 
+    public NavMeshAgent agent;
     private NavMeshAgent shotSpawnAgent;
 
     public float speedBullet;
@@ -31,27 +31,26 @@ public partial class Entity : MonoBehaviour
 
     void AIStart()
     {
-        AreaGames = GameObject.FindWithTag("AreaGames");
-        agent = GetComponent<NavMeshAgent>();
+        if (!AreaGames) { AreaGames = GameObject.FindWithTag("AreaGames"); }
+        if (!agent) { agent = GetComponent<NavMeshAgent>(); }
         FindEnemy();
         CoordinatesAreaGames();
-
-      
-       
-     
     }
 
 
 
     void LateUpdate()
     {
-      //  StartCoroutine(GetCurrentTarget());
+        GetCurrentTarget(); // тут делегат должен быть с подпиской кто будет Таргет
+        //  StartCoroutine(GetCurrentTarget());
         if (currentTarget != null)
         {
-            agent.SetDestination(new Vector3(x, AreaGames.transform.position.y, z));
+
+            if (whoControls == WhoControls.AI) { agent.SetDestination(new Vector3(x, AreaGames.transform.position.y, z)); }
             shotSpawn.transform.rotation = Quaternion.RotateTowards(shotSpawn.transform.rotation, Quaternion.LookRotation(currentTarget.transform.position - shotSpawn.transform.position), 10 * Time.deltaTime * 100);
             shotSpawn.transform.rotation = Quaternion.Euler(transform.eulerAngles.x, shotSpawn.transform.eulerAngles.y, transform.eulerAngles.z);
         }
+
     }
 
     void CoordinatesAreaGames()
@@ -97,7 +96,7 @@ public partial class Entity : MonoBehaviour
             StartCoroutine(GetFindEnemyAlways()); return;
 
         }
-        StartCoroutine(GetCurrentTarget());
+        //   StartCoroutine(GetCurrentMoveTarget());
         StartCoroutine(GetFindEnemyAlways());
 
     }
@@ -106,75 +105,105 @@ public partial class Entity : MonoBehaviour
     {
         yield return new WaitForSeconds(5f);
         FindEnemy();
-        if (owner == Owner.Monster) { RandomMoveForEnemy(); }
+        if (whoControls == WhoControls.AI) { RandomMoveForEnemy(); }
     }
 
 
     void RandomMoveForEnemy()  // enemy
     {
-        if (owner == Owner.Monster)
+        if (whoControls == WhoControls.AI)
         {
 
             x = Random.Range(xAreaGames.x, xAreaGames.y);
             z = Random.Range(zAreaGames.x, zAreaGames.y);
 
-         //  agent.SetDestination(new Vector3(x, AreaGames.transform.position.y, z));
+            //  agent.SetDestination(new Vector3(x, AreaGames.transform.position.y, z));
 
-            GetFindEnemyAlways(); 
+            GetFindEnemyAlways();
         }
 
     }
 
-    /////////////    /////////////  /////////////    Стрый код     /////////////  /////////////  /////////////  /////////////  ///////////// 
+    /////////////    /////////////  /////////////    код  Для нахождения   CurrentTarget  /////////////  /////////////  /////////////  /////////////  ///////////// 
 
-    IEnumerator GetCurrentTarget()
+
+    public void CurrentTargetDelegat(string command) // какую цель будет преследовать
+    { 
+    }
+
+    public void GetCurrentTarget() // чисто до ково ближе
     {
-        float tmpDist = float.MaxValue;
-        currentTarget = null;
-        for (int i = 0; i < targets.Count; i++)
+
+        if (targets.Count > 0)
         {
-            if (agent.SetDestination(targets[i].transform.position))
+            int minDist = 0;
+            float dist = float.MaxValue;
+            for (int i = 0; i < targets.Count; i++)
             {
-                //ждем пока вычислится путь до цели
-                while (agent.pathPending)
-                { 
-                    yield return null;
-                }
-        
-                // проверяем, можно ли дойти до цели
-                if (agent.pathStatus != NavMeshPathStatus.PathInvalid)
+
+                float dist2 = Vector3.Distance(targets[i].transform.position, transform.position);
+                if (dist > dist2)
                 {
-                    float pathDistance = 0;
-                    //вычисляем длину пути
-                    pathDistance += Vector3.Distance(transform.position, agent.path.corners[0]);
-                    for (int j = 1; j < agent.path.corners.Length; j++)
+                    dist = dist2; minDist = i;
+                }
+            }
+            currentTarget = null;
+            currentTarget = targets[minDist];
+       
+        }
+
+    }
+
+     
+        IEnumerator GetCurrentMoveTarget() // чисто найти до кого ближе дойти а не ближе 
+        {
+            float tmpDist = float.MaxValue;
+            currentTarget = null;
+            for (int i = 0; i < targets.Count; i++)
+            {
+                if (agent.SetDestination(targets[i].transform.position))
+                {
+                    //ждем пока вычислится путь до цели
+                    while (agent.pathPending)
                     {
-                        pathDistance += Vector3.Distance(agent.path.corners[j - 1], agent.path.corners[j]);
+                        yield return null;
                     }
 
-                    if (tmpDist > pathDistance)
+                    // проверяем, можно ли дойти до цели
+                    if (agent.pathStatus != NavMeshPathStatus.PathInvalid)
                     {
-                        tmpDist = pathDistance;
-                        currentTarget = targets[i];
+                        float pathDistance = 0;
+                        //вычисляем длину пути
+                        pathDistance += Vector3.Distance(transform.position, agent.path.corners[0]);
+                        for (int j = 1; j < agent.path.corners.Length; j++)
+                        {
+                            pathDistance += Vector3.Distance(agent.path.corners[j - 1], agent.path.corners[j]);
+                        }
+
+                        if (tmpDist > pathDistance)
+                        {
+                            tmpDist = pathDistance;
+                            currentTarget = targets[i];
 
 
-                        agent.ResetPath();
+                            agent.ResetPath();
+                        }
                     }
-                }
-                else
-                {
-                    Debug.Log("невозможно дойти до " + targets[i].name);
+                    else
+                    {
+                        Debug.Log("невозможно дойти до " + targets[i].name);
+                    }
+
                 }
 
             }
 
         }
 
-    }
 
 
 
 
 
-
+ 
 }
