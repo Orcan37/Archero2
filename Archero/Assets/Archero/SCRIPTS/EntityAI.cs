@@ -24,10 +24,21 @@ public partial class Entity : MonoBehaviour
 
     public float x;
     public float z;
-
+    AiEnemy aiEnemy;
     /// <summary>
-    /// Archo
-    /// </summary>
+    /// Archo AI
+    /// </summary> 
+
+    public void OnAI(bool OnOrOff)
+    {
+        if (GetComponent<AiEnemy>() == null)
+        {  // если нету AiEnemy то создать на обхекте его
+            aiEnemy =   this.gameObject.AddComponent<AiEnemy>();
+        }
+        this.gameObject.GetComponent<AiEnemy>().enabled = OnOrOff;
+        
+        // далее включаем его 
+    }
 
     void AIStart()
     {
@@ -39,14 +50,12 @@ public partial class Entity : MonoBehaviour
 
 
 
-    void LateUpdate()
+    void FindTargetAndView()
     {
         GetCurrentTarget(); // тут делегат должен быть с подпиской кто будет Таргет
         //  StartCoroutine(GetCurrentTarget());
-        if (currentTarget != null)
-        {
-
-            if (whoControls == WhoControls.AI) { agent.SetDestination(new Vector3(x, AreaGames.transform.position.y, z)); }
+        if (currentTarget != null && currentTarget.activeSelf) // поворот пушки 
+        { 
             shotSpawn.transform.rotation = Quaternion.RotateTowards(shotSpawn.transform.rotation, Quaternion.LookRotation(currentTarget.transform.position - shotSpawn.transform.position), 10 * Time.deltaTime * 100);
             shotSpawn.transform.rotation = Quaternion.Euler(transform.eulerAngles.x, shotSpawn.transform.eulerAngles.y, transform.eulerAngles.z);
         }
@@ -54,8 +63,7 @@ public partial class Entity : MonoBehaviour
     }
 
     void CoordinatesAreaGames()
-    {
-
+    { 
         float width = AreaGames.transform.localScale.x;// ширина
         float height = AreaGames.transform.localScale.z; // высота
 
@@ -73,17 +81,12 @@ public partial class Entity : MonoBehaviour
 
         zAreaGames.x = yt;
         zAreaGames.y = yb;
-        RandomMoveForEnemy();
-    }
-
-
-
-
-
+   
+    } 
     void FindEnemy()
     {
         targets.Clear();
-        Entity[] entity = GameObject.FindObjectsOfType<Entity>();
+        Entity[] entity =  FindObjectsOfType<Entity>();
         for (int j = 0; j < entity.Length; j++)
         {
             if (entity[j].owner != owner)
@@ -97,38 +100,23 @@ public partial class Entity : MonoBehaviour
 
         }
         //   StartCoroutine(GetCurrentMoveTarget());
-        StartCoroutine(GetFindEnemyAlways());
-
+        StartCoroutine(GetFindEnemyAlways()); 
     }
 
-    IEnumerator GetFindEnemyAlways()
+   public IEnumerator GetFindEnemyAlways()
     {
-        yield return new WaitForSeconds(5f);
+        yield return new WaitForSeconds(3f);
         FindEnemy();
-        if (whoControls == WhoControls.AI) { RandomMoveForEnemy(); }
+        if (whoControls == WhoControls.AI) { aiEnemy.RandomMoveForEnemy(); }
     }
 
 
-    void RandomMoveForEnemy()  // enemy
-    {
-        if (whoControls == WhoControls.AI)
-        {
-
-            x = Random.Range(xAreaGames.x, xAreaGames.y);
-            z = Random.Range(zAreaGames.x, zAreaGames.y);
-
-            //  agent.SetDestination(new Vector3(x, AreaGames.transform.position.y, z));
-
-            GetFindEnemyAlways();
-        }
-
-    }
 
     /////////////    /////////////  /////////////    код  Для нахождения   CurrentTarget  /////////////  /////////////  /////////////  /////////////  ///////////// 
 
 
     public void CurrentTargetDelegat(string command) // какую цель будет преследовать
-    { 
+    {
     }
 
     public void GetCurrentTarget() // чисто до ково ближе
@@ -149,61 +137,61 @@ public partial class Entity : MonoBehaviour
             }
             currentTarget = null;
             currentTarget = targets[minDist];
-       
+
         }
 
     }
 
-     
-        IEnumerator GetCurrentMoveTarget() // чисто найти до кого ближе дойти а не ближе 
+
+    IEnumerator GetCurrentMoveTarget() // чисто найти до кого ближе дойти а не ближе дистанция
+    {
+        float tmpDist = float.MaxValue;
+        currentTarget = null;
+        for (int i = 0; i < targets.Count; i++)
         {
-            float tmpDist = float.MaxValue;
-            currentTarget = null;
-            for (int i = 0; i < targets.Count; i++)
+            if (agent.SetDestination(targets[i].transform.position))
             {
-                if (agent.SetDestination(targets[i].transform.position))
+                //ждем пока вычислится путь до цели
+                while (agent.pathPending)
                 {
-                    //ждем пока вычислится путь до цели
-                    while (agent.pathPending)
+                    yield return null;
+                }
+
+                // проверяем, можно ли дойти до цели
+                if (agent.pathStatus != NavMeshPathStatus.PathInvalid)
+                {
+                    float pathDistance = 0;
+                    //вычисляем длину пути
+                    pathDistance += Vector3.Distance(transform.position, agent.path.corners[0]);
+                    for (int j = 1; j < agent.path.corners.Length; j++)
                     {
-                        yield return null;
+                        pathDistance += Vector3.Distance(agent.path.corners[j - 1], agent.path.corners[j]);
                     }
 
-                    // проверяем, можно ли дойти до цели
-                    if (agent.pathStatus != NavMeshPathStatus.PathInvalid)
+                    if (tmpDist > pathDistance)
                     {
-                        float pathDistance = 0;
-                        //вычисляем длину пути
-                        pathDistance += Vector3.Distance(transform.position, agent.path.corners[0]);
-                        for (int j = 1; j < agent.path.corners.Length; j++)
-                        {
-                            pathDistance += Vector3.Distance(agent.path.corners[j - 1], agent.path.corners[j]);
-                        }
-
-                        if (tmpDist > pathDistance)
-                        {
-                            tmpDist = pathDistance;
-                            currentTarget = targets[i];
+                        tmpDist = pathDistance;
+                        currentTarget = targets[i];
 
 
-                            agent.ResetPath();
-                        }
+                        agent.ResetPath();
                     }
-                    else
-                    {
-                        Debug.Log("невозможно дойти до " + targets[i].name);
-                    }
-
+                }
+                else
+                {
+                    Debug.Log("невозможно дойти до " + targets[i].name);
                 }
 
             }
 
         }
 
+    }
 
 
 
 
 
- 
+
+
 }

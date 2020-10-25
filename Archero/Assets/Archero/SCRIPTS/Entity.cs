@@ -4,7 +4,7 @@ using UniRx;
 using UnityEngine;
 
 public partial class Entity : MonoBehaviour
-{ 
+{
     public int damage = 1;
     public float speedAtak = 3;
     public float delayAtak = 3;
@@ -18,9 +18,7 @@ public partial class Entity : MonoBehaviour
     [Header("Status")]
     public Owner owner = Owner.Player1;
     public WhoControls whoControls = WhoControls.AI;
-
-    public Material[] materialsOwner;
-
+      
     public VariableJoystick variableJoystick;
     public Rigidbody rb;
 
@@ -32,55 +30,65 @@ public partial class Entity : MonoBehaviour
     {
         if (delayAtak > 0)
         {
-
             delayAtak -= Time.deltaTime;
-
         }
         else
         {
-            if (whoControls == WhoControls.AI || atakTrue)
+            if (atakTrue)
             {
-              //  StartCoroutine(GetCurrentMoveTarget());
-             
+                //  StartCoroutine(GetCurrentMoveTarget());
                 AtackEnemy();    // стрельнуть
-
             }
         }
-
-        if (whoControls == WhoControls.Player)
-        {
-            Vector3 direction = Vector3.forward * variableJoystick.Vertical + Vector3.right * variableJoystick.Horizontal;
-            rb.AddForce(direction * speed * 10 * Time.fixedDeltaTime, ForceMode.VelocityChange);
-            if (variableJoystick.Vertical != 0 || variableJoystick.Horizontal != 0)
-            {
-                atakTrue = false;
-            }
-            else
-            {
-                atakTrue = true;
-            }
-        }  // тоько если человек пользуется 
-        
-
+ 
     }
-    void Start()
+    void OnEnable()
     {
-        shotSpawn =  transform.Find("shotSpawn").gameObject;
+        shotSpawn = transform.Find("shotSpawn").gameObject;
         rb = GetComponent<Rigidbody>();
-        if (owner == Owner.Player1)
-        {
-            GetComponent<MeshRenderer>().material = materialsOwner[0];
-        }
-        else if (owner == Owner.Player2)
-        {
-            GetComponent<MeshRenderer>().material = materialsOwner[1];
-        }
 
+       ColorOwner c = new ColorOwner();
+        GetComponent<MeshRenderer>().material.color = c.GetColorPlayer(owner);
+  
         currentHealth = maxHealth;
-
+        if (whoControls == WhoControls.Player) { PlayerControler(true); OnAI(false); }
+        else if (whoControls == WhoControls.AI) { OnAI(true); PlayerControler(false); }
+        else if (whoControls == WhoControls.none) { PlayerControler(false); OnAI(false); }
         AIStart();
+
+
+       
     }
-     
+
+   
+    Coroutine CPlayerControler;
+    public void PlayerControler(bool on)
+    {
+        if (on) { CPlayerControler = StartCoroutine(CPlayerJoystickControler());  } else
+        {
+      if(CPlayerControler != null)      StopCoroutine(CPlayerControler); 
+        }
+       
+    }
+          IEnumerator CPlayerJoystickControler()
+    { 
+        while (true)
+        {
+
+            yield return null;
+            FindTargetAndView();
+            Vector3 direction = Vector3.forward * variableJoystick.Vertical + Vector3.right * variableJoystick.Horizontal;
+        rb.AddForce(direction * speed * 10 * Time.fixedDeltaTime, ForceMode.VelocityChange);
+        if (variableJoystick.Vertical != 0 || variableJoystick.Horizontal != 0)
+        {
+            atakTrue = false;
+        }
+        else
+        {
+            atakTrue = true;
+            }
+        }  
+    }
 
     public void AtackEnemy()
     {
@@ -103,6 +111,7 @@ public partial class Entity : MonoBehaviour
     public void DeadThisGo()
     {
         GameObject Finish = GameObject.FindWithTag("Finish");
+       // transform.position = new Vector3(1000, 1000, 1000);
         this.gameObject.transform.SetParent(Finish.transform);
         this.gameObject.SetActive(false);
 
@@ -121,7 +130,7 @@ public partial class Entity : MonoBehaviour
         this.gameObject.transform.SetParent(RespawnGO.transform);
         AIStart();
 
-        if (whoControls == WhoControls.AI) { RandomMoveForEnemy(); }
+        if (whoControls == WhoControls.AI) { aiEnemy.EndRespawn(); }
     }
 
 }
