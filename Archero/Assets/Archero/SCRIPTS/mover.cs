@@ -8,7 +8,7 @@ public class mover : MonoBehaviour
     public float speed;
     public float destroyTime = 3;
     public Owner owner = Owner.Player1;
-
+    L10PoolExample L10PoolExampl;
     public void Start()
     {
         GetComponent<Rigidbody>().velocity = transform.forward * speed;
@@ -24,6 +24,7 @@ public class mover : MonoBehaviour
         {
             other.GetComponent<Entity>().TakeDamage(powerAtak);
         }
+        L10PoolExampl.MyInstance(this.gameObject);
     }
 
 }
